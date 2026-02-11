@@ -1,0 +1,2 @@
+cd /etc/udev/rules.d
+ls -lrt 
