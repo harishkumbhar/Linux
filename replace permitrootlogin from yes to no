@@ -1,0 +1,20 @@
+---
+- name: Disable Root Login in SSH Configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure PermitRootLogin is set to no
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^(#\s*)?PermitRootLogin\s+'
+        line: 'PermitRootLogin no'
+        state: present
+        backup: true
+      notify: Restart SSH Service
+
+  handlers:
+    - name: Restart SSH Service
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
