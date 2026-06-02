@@ -1,0 +1,7 @@
+[root@cmpcuatmnclapp201 ~]# mokutil --test-key  /opt/ds_agent/secureboot/DS2022.der  /opt/ds_agent/secureboot/DS20_v2.der   /opt/ds_agent/secureboot/DS11_2022.der
+/opt/ds_agent/secureboot/DS2022.der is not enrolled
+[root@cmpcuatmnclapp201 ~]#
+[root@cmpcuatmnclapp201 ~]# mokutil --import /opt/ds_agent/secureboot/DS2022.der /opt/ds_agent/secureboot/DS20_v2.der /opt/ds_agent/secureboot/DS11_2022.der
+input password:
+input password again:
+[root@cmpcuatmnclapp201 ~]#
