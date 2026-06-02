@@ -69,16 +69,19 @@
       become: yes
       become_user: "{{ splunk_user }}"
 
-    - name: Ensure serverName is set correctly in inputs.conf
-      ansible.builtin.lineinfile:
+    - name: Ensure [general] and serverName are set correctly in inputs.conf
+      ansible.builtin.blockinfile:
         path: "{{ splunk_home }}/etc/system/local/inputs.conf"
-        regexp: '^serverName\s*='
-        line: "serverName = {{ ansible_hostname }}"
         create: yes
         owner: "{{ splunk_user }}"
         group: "{{ splunk_group }}"
         mode: '0644'
+        marker: "# {mark} ANSIBLE MANAGED GENERAL SETTINGS"
+        block: |
+          [general]
+          serverName = {{ ansible_hostname }}
       notify: Restart Splunk via Binary
+
 
     - name: Set ACL permissions for splunk user on /var/log/
       ansible.builtin.command:
