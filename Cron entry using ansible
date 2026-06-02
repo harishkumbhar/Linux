@@ -1,0 +1,22 @@
+- name: Configure multiple cron entries
+  hosts: 10.101.158.249
+  become: yes
+  tasks:
+    - name: Schedule Snowagent jobs
+      ansible.builtin.cron:
+        name: "{{ item.name }}"
+        minute: "{{ item.minute }}"
+        hour: "{{ item.hour }}"
+        job: "{{ item.job }}"
+        user: root
+        state: present
+      with_items:
+        - name: "Snowagent java job"
+          minute: "15"
+          hour: "1"
+          job: "nice -n 10 java -jar /opt/snow/snowagent.jar --config /opt/snow/snowagent.config"
+        # You can easily add more entries here:
+        # - name: "Another job"
+        #   minute: "0"
+        #   hour: "12"
+        #   job: "/usr/local/bin/backup.sh"
