@@ -12,18 +12,16 @@
 
   tasks:
     - name: Create user-seed.conf for custom admin user
-      community.general.ini_file:
-        path: "{{ splunk_home }}/etc/system/local/user-seed.conf"
-        section: user_info
-        option: "{{ item.option }}"
-        value: "{{ item.value }}"
+      ansible.builtin.copy:
+        dest: "{{ splunk_home }}/etc/system/local/user-seed.conf"
+        content: |
+          [user_info]
+          USERNAME = {{ splunk_admin_user }}
+          PASSWORD = {{ splunk_admin_pass }}
         owner: root
         group: root
         mode: '0600'
-      loop:
-        - { option: 'USERNAME', value: "{{ splunk_admin_user }}" }
-        - { option: 'PASSWORD', value: "{{ splunk_admin_pass }}" }
-      # This file seeds the custom username/password and prevents the initial prompt
+      # Built-in module replaces community.general to completely bypass setup prompts
 
     - name: Start Splunk for the first time and accept license
       ansible.builtin.command:
@@ -58,24 +56,21 @@
       become_user: "{{ splunk_user }}"
 
     - name: Ensure serverName is set correctly in inputs.conf
-      community.general.ini_file:
+      ansible.builtin.lineinfile:
         path: "{{ splunk_home }}/etc/system/local/inputs.conf"
-        section: general
-        option: serverName
-        value: "{{ ansible_hostname }}"
+        regexp: '^serverName\s*='
+        line: "serverName = {{ ansible_hostname }}"
+        create: yes
         owner: "{{ splunk_user }}"
         group: "{{ splunk_group }}"
         mode: '0644'
+      # Also converted to a built-in module for maximum compatibility
       notify: Restart Splunk
 
     - name: Set ACL permissions for splunk user on /var/log/
-      ansible.posix.acl:
-        path: /var/log/
-        entity: "{{ splunk_user }}"
-        etype: user
-        permissions: rx
-        state: present
-        recursive: yes
+      ansible.builtin.command:
+        cmd: "setfacl -Rm u:{{ splunk_user }}:rx /var/log/"
+      # Changed to command execution to bypass potential ansible.posix missing collection errors
 
   handlers:
     - name: Restart Splunk
