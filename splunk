@@ -1,0 +1,19 @@
+/opt/splunkforwarder/bin/splunk start --accept-license 
+
+Please enter an administrator username: spladmin
+Please enter a new password: Spl@1234
+
+/opt/splunkforwarder/bin/splunk stop
+chown -R splunk:splunk /opt/splunkforwarder/
+/opt/splunkforwarder/bin/splunk enable boot-start -user splunk 
+su - splunk
+/opt/splunkforwarder/bin/splunk start
+/opt/splunkforwarder/bin/splunk status 
+/opt/splunkforwarder/bin/splunk set deploy-poll deploymentserver4.sbi.co.in:8089
+
+Please enter an administrator username: spladmin
+Please enter a new password: Spl@1234  
+-------------------------------------------------------------
+cat /opt/splunkforwarder/etc/system/local/inputs.conf
+[general]
+serverName = hostname
