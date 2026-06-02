@@ -1,7 +1,31 @@
-[root@cmpcuatmnclapp201 ~]# mokutil --test-key  /opt/ds_agent/secureboot/DS2022.der  /opt/ds_agent/secureboot/DS20_v2.der   /opt/ds_agent/secureboot/DS11_2022.der
-/opt/ds_agent/secureboot/DS2022.der is not enrolled
-[root@cmpcuatmnclapp201 ~]#
-[root@cmpcuatmnclapp201 ~]# mokutil --import /opt/ds_agent/secureboot/DS2022.der /opt/ds_agent/secureboot/DS20_v2.der /opt/ds_agent/secureboot/DS11_2022.der
-input password:
-input password again:
-[root@cmpcuatmnclapp201 ~]#
+---
+- name: Enroll Deep Security Agent Secure Boot Keys
+  hosts: secure_boot_servers
+  become: yes
+  vars:
+    mok_password: "New@1234"
+    cert_paths:
+      - "/opt/ds_agent/secureboot/DS2022.der"
+      - "/opt/ds_agent/secureboot/DS20_v2.der"
+      - "/opt/ds_agent/secureboot/DS11_2022.der"
+
+  tasks:
+    - name: Import Deep Security certificates to MOK list
+      ansible.builtin.command:
+        cmd: "mokutil --import {{ item }}"
+        stdin: |
+          {{ mok_password }}
+          {{ mok_password }}
+      loop: "{{ cert_paths }}"
+      register: import_result
+      failed_when:
+        - import_result.rc != 0
+        - "'already added' not in import_result.stderr"
+        - "'already enrolled' not in import_result.stderr"
+      # This loops through all 3 keys individually. 
+      # If a key is already staged or enrolled, it will safely skip it instead of failing.
+
+    - name: Remind operator to reboot the server
+      ansible.builtin.debug:
+        msg: "Keys have been processed. If any changes were made, you MUST reboot this server and complete the MOK enrollment on the blue console screen using password: {{ mok_password }}"
+
