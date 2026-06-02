@@ -21,7 +21,6 @@
         owner: root
         group: root
         mode: '0600'
-      # Built-in module replaces community.general to completely bypass setup prompts
 
     - name: Start Splunk for the first time and accept license
       ansible.builtin.command:
@@ -40,14 +39,29 @@
         group: "{{ splunk_group }}"
         recurse: yes
 
-    - name: Enable Splunk to start at boot as the splunk user
+    - name: Disable existing Splunk boot-start to prevent conflicts
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk disable boot-start"
+      failed_when: false
+
+    - name: Enable Splunk to start at boot cleanly as the splunk user
       ansible.builtin.command:
         cmd: "{{ splunk_home }}/bin/splunk enable boot-start -user {{ splunk_user }} --accept-license --no-prompt"
 
-    - name: Start Splunk service as the splunk user
-      ansible.builtin.systemd:
-        name: splunk
-        state: started
+    - name: Start Splunk service using binary execution
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk start"
+      become: yes
+      become_user: "{{ splunk_user }}"
+      # Bypasses systemd naming discrepancies entirely by running as the native binary
+
+    - name: Check Splunk status
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk status"
+      become: yes
+      become_user: "{{ splunk_user }}"
+      register: splunk_status_output
+      changed_when: false
 
     - name: Configure deployment server polling
       ansible.builtin.command:
@@ -64,16 +78,15 @@
         owner: "{{ splunk_user }}"
         group: "{{ splunk_group }}"
         mode: '0644'
-      # Also converted to a built-in module for maximum compatibility
-      notify: Restart Splunk
+      notify: Restart Splunk via Binary
 
     - name: Set ACL permissions for splunk user on /var/log/
       ansible.builtin.command:
         cmd: "setfacl -Rm u:{{ splunk_user }}:rx /var/log/"
-      # Changed to command execution to bypass potential ansible.posix missing collection errors
 
   handlers:
-    - name: Restart Splunk
-      ansible.builtin.systemd:
-        name: splunk
-        state: restarted
+    - name: Restart Splunk via Binary
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk restart"
+      become: yes
+      become_user: "{{ splunk_user }}"
