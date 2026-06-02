@@ -1,21 +1,84 @@
-/opt/splunkforwarder/bin/splunk start --accept-license 
+---
+- name: Configure Splunk Universal Forwarder with Custom User
+  hosts: splunk_forwarders
+  become: yes
+  vars:
+    splunk_home: "/opt/splunkforwarder"
+    splunk_user: "splunk"
+    splunk_group: "splunk"
+    splunk_admin_user: "spladmin"
+    splunk_admin_pass: "Spl@1234"
+    deployment_server: "deploymentserver4.sbi.co.in:8089"
 
-Please enter an administrator username: spladmin
-Please enter a new password: Spl@1234
+  tasks:
+    - name: Create user-seed.conf for custom admin user
+      community.general.ini_file:
+        path: "{{ splunk_home }}/etc/system/local/user-seed.conf"
+        section: user_info
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+        owner: root
+        group: root
+        mode: '0600'
+      loop:
+        - { option: 'USERNAME', value: "{{ splunk_admin_user }}" }
+        - { option: 'PASSWORD', value: "{{ splunk_admin_pass }}" }
+      # This file seeds the custom username/password and prevents the initial prompt
 
-/opt/splunkforwarder/bin/splunk stop
-chown -R splunk:splunk /opt/splunkforwarder/
-/opt/splunkforwarder/bin/splunk enable boot-start -user splunk 
-su - splunk
-/opt/splunkforwarder/bin/splunk start
-/opt/splunkforwarder/bin/splunk status 
-/opt/splunkforwarder/bin/splunk set deploy-poll deploymentserver4.sbi.co.in:8089
+    - name: Start Splunk for the first time and accept license
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk start --accept-license --answer-yes --no-prompt"
+        creates: "{{ splunk_home }}/etc/auth/splunk.secret"
 
-Please enter an administrator username: spladmin
-Please enter a new password: Spl@1234  
--------------------------------------------------------------
-cat /opt/splunkforwarder/etc/system/local/inputs.conf
-[general]
-serverName = hostname
-------------------------------------------------------
-setfacl -Rm u:splunk:rx /var/log/
+    - name: Stop Splunk to configure system settings
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk stop"
+      failed_when: false
+
+    - name: Change ownership of Splunk forwarder directory to splunk user
+      ansible.builtin.file:
+        path: "{{ splunk_home }}"
+        owner: "{{ splunk_user }}"
+        group: "{{ splunk_group }}"
+        recurse: yes
+
+    - name: Enable Splunk to start at boot as the splunk user
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk enable boot-start -user {{ splunk_user }} --accept-license --no-prompt"
+
+    - name: Start Splunk service as the splunk user
+      ansible.builtin.systemd:
+        name: splunk
+        state: started
+
+    - name: Configure deployment server polling
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk set deploy-poll {{ deployment_server }} -auth {{ splunk_admin_user }}:{{ splunk_admin_pass }}"
+      become: yes
+      become_user: "{{ splunk_user }}"
+
+    - name: Ensure serverName is set correctly in inputs.conf
+      community.general.ini_file:
+        path: "{{ splunk_home }}/etc/system/local/inputs.conf"
+        section: general
+        option: serverName
+        value: "{{ ansible_hostname }}"
+        owner: "{{ splunk_user }}"
+        group: "{{ splunk_group }}"
+        mode: '0644'
+      notify: Restart Splunk
+
+    - name: Set ACL permissions for splunk user on /var/log/
+      ansible.posix.acl:
+        path: /var/log/
+        entity: "{{ splunk_user }}"
+        etype: user
+        permissions: rx
+        state: present
+        recursive: yes
+
+  handlers:
+    - name: Restart Splunk
+      ansible.builtin.systemd:
+        name: splunk
+        state: restarted
