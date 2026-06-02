@@ -17,3 +17,5 @@ Please enter a new password: Spl@1234
 cat /opt/splunkforwarder/etc/system/local/inputs.conf
 [general]
 serverName = hostname
+------------------------------------------------------
+setfacl -Rm u:splunk:rx /var/log/
