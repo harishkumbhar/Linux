@@ -20,3 +20,5 @@
         #   minute: "0"
         #   hour: "12"
         #   job: "/usr/local/bin/backup.sh"
+##REVERT
+ansible uat -i db_inventory.ini -m ansible.builtin.cron -a "name='Snowagent java job' state=absent" -b
