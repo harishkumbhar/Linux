@@ -1,0 +1,180 @@
+################### DR Switchover Acivity #####################################
+
+---------------- Stop Services on DC TXN server --------
+	
+Step 1:- Stop Incoming/cron services				--------- (Run on TXN server - 10.189.54.72)
+	svcs -a cron									--------- Check cron service
+	svcadm disable cron								--------- Stop cron services
+	svcs -a cron									--------- Verify cron service
+
+OR
+
+Open 10.191.66.60 ansible and run >> (before run check txn server is also going to DR)
+bash /opt/ansible/cron_disable.sh
+
+##Stop cron service and hash Kerla and Jharkhand on server - 10.191.219.108
+    systemctl stop crond.service
+    crontab -e 
+    #55 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.log  2>&1
+    #45 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.log  2>&1
+    FYI
+    /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.sh
+    sftp -b -oport=2202 sbi@103.135.131.103
+	
+Step 2:- Stop JAVA/Routine process					--------- (Run on TXN - 10.189.54.72)
+	ps -ef | grep java | wc -l						--------- Check java process running
+	kill -9 `ps -ef|grep java|awk '{print $2}'`		--------- Kill all running java process.
+	ps -ef | grep java | wc -l						--------- Verify no java process running.
+
+Step 3: - Stop MQ service
+    #DC MQ server
+    pcs status
+    pcs node unstandby cmpcprmq94 cmpcprmq90
+
+Step 4 :- Break DC sync NFS and start on DR () ---tell banker to coordinate with Storage team
+        DC should be read only and DR should be Read write mode.
+        command : touch /data/test
+
+Step 5 :- Open Server (10.177.48.88) PR to DR sync stop
+          crontab -l /opt/ansible/PR_TO_DR_folderrsync_on_demand_new.sh  .....(stop)        
+          Manually run once after cron service is stopped. 
+
+
+
+----------------Start Services on DR server--------
+
+Step 4:- Mount all the NFS mount points				----------ansible 88 & 194 run ansible adhoc commands as below
+
+	Open 10.177.48.88 ansible and run >>
+    bash mountall_nfs_rhel.sh
+    bash mountall_nfs_solaris.sh or bash mountall_nfs_solaris_with_options.sh
+
+	Open 10.176.32.194 ansible and run
+    bash mountall_nfs_rhel.sh
+	
+Step 5:- Start Incoming/cron services				---------(Run on DR txn server - 10.176.144.136)
+	svcs -a cron									--------- Check cron service
+	svcadm enable cron								--------- Start cron services
+	svcs -a cron									--------- Verify cron service
+
+OR
+
+Open 10.177.48.88 ansible and run >> (before run check txn server is also going to DR)
+bash /opt/ansible/cron_enable.sh
+
+####Start cron service and unhash Kerla and Jharkhand on server - 10.176.13.96
+    systemctl start crond.service
+    crontab -e 
+    55 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.log  2>&1
+    45 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.log  2>&1
+
+Step 5:-
+
+    #DR MQ server
+    pcs status
+    pcs node standby cmpcdrmq51 cmpcdrmq52
+    systemctl start qm@CMP_MGR.service
+
+Step 6:-
+    Open Server (10.177.48.88) DR to PR sync start
+    crontab -l /opt/ansible/DR_TO_PR_folderrsync_on_demand_new.sh  .....(start)        
+    Manually run once after cron service is started. 
+
+	
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+    
+################### DC Switchback Acivity #####################################
+----------------Stop Services on DR TXN server --------
+
+	
+Step 1:- Stop Incoming/cron services				---------(Run on all DR TXN server - 10.176.144.136)
+	svcs -a cron									--------- Check cron service	
+	svcadm disable cron								--------- Stop cron services.
+	svcs -a cron									--------- Verify cron service
+
+OR
+
+Open 10.177.48.88 ansible and run >> (before run check txn server is also going to DR)
+bash /opt/ansible/cron_disable.sh
+	
+Step 2:- Stop JAVA/Routine process					---------(Run on DR 1TXN - 10.176.144.136)
+	ps -ef | grep java | wc -l						--------- Check java process running
+	kill -9 `ps -ef|grep java|awk '{print $2}'`		--------- Kill all running java process.
+	ps -ef | grep java | wc -l						--------- Verify no java process running.
+
+Step 3:- Stop cron service and hash Kerla and Jharkhand on server - 10.176.13.96
+    systemctl stop crond.service
+    crontab -e 
+    #55 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.log  2>&1
+    #45 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.log  2>&1    
+
+---------------- Start Services on DC servers --------
+
+Step 4:- Mount all the NFS mount points				----------ansible 60 & 229 run ansible adhoc commands as below
+
+	Open 10.191.66.60 ansible and run >>
+    bash mountall_nfs_rhel.sh
+    bash mountall_nfs_solaris.sh
+	
+Step 5:- Start Incoming/cron services				---------(Run on DC TXN server - 10.189.54.72)
+	svcs -a cron									--------- Check cron service
+	svcadm enable cron								--------- Start cron services.
+	svcs -a cron									--------- Verify cron service
+
+OR
+
+Open 10.191.66.60 ansible and run >> (before run check txn server is also going to DR)
+bash /opt/ansible/cron_enable.sh
+
+Step 6:- Start cron service and unhash Kerla and Jharkhand on server - 10.191.219.108
+    systemctl start crond.service
+    crontab -e 
+    55 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.log  2>&1
+    45 * * * * bash /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.sh >> /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_Response.log  2>&1
+    FYI
+    /doc-root01/KERALA_SFTP/ftpdownload/SFTP/WPS_KERALA_SFTP.sh
+    sftp -b -oport=2202 sbi@103.135.131.103
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################### Cloud MQ ####################################
+#DC MQ server
+pcs status
+pcs node unstandby cmpcprmq94 cmpcprmq90
+
+#DR MQ server
+pcs status
+pcs node standby cmpcdrmq51 cmpcdrmq52
+systemctl start qm@CMP_MGR.service
+
+#Check channels are in running state or not in DR
+su - mqm
+runmqsc CMP_MGR
+DIS CHSTATUS(RTGS.TO.CMP)        
+DIS CHSTATUS(CMP.TO.IPH) 
+DIS CHSTATUS(IPH.TO.CMP) 
+DIS CHSTATUS(CMP.TO.RTGS)   
+DIS CHSTATUS(VANQM.CMP_MGR)
+DIS CHSTATUS(CMP_MGR.VANQM)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+#mount command in Solaris for TXN DC
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/data /data
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/doc-root /doc-root
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/systemlogs /systemlogs
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/systemlogs_old /systemlogs_old
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/batchlogs /batchlogs
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/batchlogs_backup /batchlogs_backup
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/shared_lib /shared_lib
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.191.22.190:/FastPlus_Cloud_DC/REPO /REPO
+
+#mount command in Solaris for TXN DR
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/batchlogs /batchlogs
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/shared_lib /shared_lib
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/batchlogs_backup /batchlogs_backup
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/doc-root /doc-root
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/data /data
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/systemlogs /systemlogs
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.58.189:/FastPlus_Cloud_DR/REPO /REPO
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.4.204:/CMP_800_NFS /Cloud_800_nfs
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.4.185:/CMP_9000CL1_NFS01TXN /TXN_Backup
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.4.204:/CMP_800_NFS /Cloud_800_nfs
+mount -F nfs -o rw,bg,hard,rsize=65536,wsize=65536,vers=4,forcedirectio,nointr,proto=tcp,suid 10.176.145.5:/DB_Audit_trail_logs/ /DB_Audit_trail_logs
