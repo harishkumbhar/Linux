@@ -1,0 +1,52 @@
+---
+- name: Audit /bin/bash users password status
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Get all users with /bin/bash shell
+      ansible.builtin.shell: |
+        awk -F: '$7 == "/bin/bash" {print $1}' /etc/passwd
+      register: bash_users
+      changed_when: false
+
+    - name: Check password status for each /bin/bash user
+      ansible.builtin.command: "passwd -S {{ item }}"
+      loop: "{{ bash_users.stdout_lines }}"
+      register: passwd_status
+      changed_when: false
+
+    - name: Prepare CSV rows
+      ansible.builtin.set_fact:
+        csv_lines: >-
+          {% set lines = [] %}
+          {% for result in passwd_status.results %}
+            {% if result.stdout is defined and result.stdout != '' %}
+              {% set parts = result.stdout.split(' ') %}
+              {% set username = parts[0] %}
+              {% set status_code = parts[1] %}
+              {# RHEL 9 passwd -S outputs 'LK' for locked, 'PS' for password set, 'NP' for no password #}
+              {% set status = 'LK' if status_code == 'LK' else 'UK' %}
+              {% set line = [ansible_host | default(inventory_hostname), username, status, result.stdout] | join(',') %}
+              {% set _ = lines.append(line) %}
+            {% endif %}
+          {% endfor %}
+          {{ lines }}
+
+    - name: Create or clear local CSV file with headers
+      ansible.builtin.copy:
+        content: "IP/Host,Username,Status (LK/UK),Raw Passwd Output\n"
+        dest: "./bash_users_report.csv"
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Append data to CSV file
+      ansible.builtin.lineinfile:
+        path: "./bash_users_report.csv"
+        line: "{{ item }}"
+        create: no
+      loop: "{{ csv_lines }}"
+      delegate_to: localhost
+
