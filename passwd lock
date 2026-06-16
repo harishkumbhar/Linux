@@ -13,16 +13,16 @@
 
     - name: Create or clear local CSV file with headers
       ansible.builtin.copy:
-        content: "Username\n"
+        content: "IP Address,Username\n"
         dest: "./bash_users_report.csv"
         mode: '0644'
       delegate_to: localhost
       run_once: true
 
-    - name: Append usernames to CSV file
+    - name: Append IP and Username to CSV file
       ansible.builtin.lineinfile:
         path: "./bash_users_report.csv"
-        line: "{{ item }}"
+        line: "{{ ansible_host | default(inventory_hostname) }},{{ item }}"
         create: no
       loop: "{{ bash_users.stdout_lines }}"
       delegate_to: localhost
