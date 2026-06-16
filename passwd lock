@@ -1,5 +1,5 @@
 ---
-- name: Audit /bin/bash users
+- name: Audit /bin/bash users with Status
   hosts: all
   become: true
   gather_facts: true
@@ -11,18 +11,41 @@
       register: bash_users
       changed_when: false
 
+    - name: Check password status for each /bin/bash user
+      ansible.builtin.command: "passwd -S {{ item }}"
+      loop: "{{ bash_users.stdout_lines }}"
+      register: passwd_status
+      changed_when: false
+
+    - name: Prepare CSV rows
+      ansible.builtin.set_fact:
+        csv_lines: |
+          {% set lines = [] %}
+          {% for result in passwd_status.results %}
+            {% if result.stdout is defined and result.stdout != '' %}
+              {% set parts = result.stdout.split(' ') %}
+              {% set username = parts[0] %}
+              {% set status_code = parts[1] %}
+              {# 'LK' means locked, 'PS' or 'NP' means unlocked/usable #}
+              {% set status = 'Locked' if status_code == 'LK' else 'Unlocked' %}
+              {% set line = [ansible_default_ipv4.address | default(inventory_hostname), username, status] | join(',') %}
+              {% set _ = lines.append(line) %}
+            {% endif %}
+          {% endfor %}
+          {{ lines | from_yaml }}
+
     - name: Create or clear local CSV file with headers
       ansible.builtin.copy:
-        content: "IP Address,Username\n"
+        content: "IP Address,Username,Status\n"
         dest: "./bash_users_report.csv"
         mode: '0644'
       delegate_to: localhost
       run_once: true
 
-    - name: Append IP and Username to CSV file
+    - name: Append data to CSV file
       ansible.builtin.lineinfile:
         path: "./bash_users_report.csv"
-        line: "{{ ansible_default_ipv4.address | default(inventory_hostname) }},{{ item }}"
+        line: "{{ item }}"
         create: no
-      loop: "{{ bash_users.stdout_lines }}"
+      loop: "{{ csv_lines }}"
       delegate_to: localhost
