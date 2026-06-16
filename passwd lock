@@ -17,23 +17,6 @@
       register: passwd_status
       changed_when: false
 
-    - name: Prepare CSV rows
-      ansible.builtin.set_fact:
-        csv_lines: |
-          {% set lines = [] %}
-          {% for result in passwd_status.results %}
-            {% if result.stdout is defined and result.stdout != '' %}
-              {% set parts = result.stdout.split(' ') %}
-              {% set username = parts[0] %}
-              {% set status_code = parts[1] %}
-              {# 'LK' means locked, 'PS' or 'NP' means unlocked/usable #}
-              {% set status = 'Locked' if status_code == 'LK' else 'Unlocked' %}
-              {% set line = [ansible_default_ipv4.address | default(inventory_hostname), username, status] | join(',') %}
-              {% set _ = lines.append(line) %}
-            {% endif %}
-          {% endfor %}
-          {{ lines | from_yaml }}
-
     - name: Create or clear local CSV file with headers
       ansible.builtin.copy:
         content: "IP Address,Username,Status\n"
@@ -42,10 +25,14 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Append data to CSV file
+    - name: Append data to CSV file natively
       ansible.builtin.lineinfile:
         path: "./bash_users_report.csv"
-        line: "{{ item }}"
+        line: >-
+          {% set parts = item.stdout.split(' ') %}
+          {% set status = 'Locked' if parts[1] == 'LK' else 'Unlocked' %}
+          {{ ansible_default_ipv4.address | default(inventory_hostname) }},{{ parts[0] }},{{ status }}
         create: no
-      loop: "{{ csv_lines }}"
+      loop: "{{ passwd_status.results }}"
+      when: item.stdout is defined and item.stdout != ''
       delegate_to: localhost
