@@ -1,0 +1,67 @@
+---
+- name: Comprehensive RHEL Server Health Check
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    report_dir: "/var/log/dailyhealthreport"
+    # Generates a clean timestamp (e.g., 2026-07-15_09-30-00)
+    current_time: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+
+  tasks:
+    - name: Ensure the health report directory exists
+      ansible.builtin.file:
+        path: "{{ report_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Run health check commands
+      ansible.builtin.shell: |
+        echo "===================================================="
+        echo "SERVER HEALTH REPORT FOR: {{ ansible_hostname }}"
+        echo "CREATED ON: {{ lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S %Z\"') }}"
+        echo "===================================================="
+        
+        echo -e "\n[1. SYSTEM UPTIME & LOAD AVERAGE]"
+        uptime
+        
+        echo -e "\n[2. MEMORY UTILIZATION (MB)]"
+        free -m
+        
+        echo -e "\n[3. FILESYSTEM DISK SPACE USAGE]"
+        df -h -x tmpfs -x devtmpfs
+        
+        echo -e "\n[4. INODE UTILIZATION]"
+        df -i -x tmpfs -x devtmpfs
+        
+        echo -e "\n[5. FAILED SYSTEMD SERVICES]"
+        systemctl --failed --no-legend
+        if [ $? -eq 0 ] && [ -z "$(systemctl --failed --no-legend)" ]; then
+            echo "All core systemd services are running healthy."
+        fi
+        
+        echo -e "\n[6. RECENT KERNEL ERRORS / OOM KILLS]"
+        dmesg -T | grep -iE "error|crit|oom-killer|killing process" | tail -n 10
+        if [ ${PIPESTATUS[1]} -ne 0 ]; then
+            echo "No critical OOM or kernel errors found in recent logs."
+        fi
+      register: health_output
+      changed_when: false
+
+    - name: Write health check results to raw log file
+      ansible.builtin.copy:
+        content: "{{ health_output.stdout }}"
+        dest: "{{ report_dir }}/health_report_{{ current_time }}.log"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Gzip the generated health report log file
+      community.general.archive:
+        path: "{{ report_dir }}/health_report_{{ current_time }}.log"
+        dest: "{{ report_dir }}/health_report_{{ current_time }}.log.gz"
+        format: gz
+        remove: yes # Deletes the raw text file after successful compression
