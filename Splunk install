@@ -48,10 +48,25 @@
       become: yes
       become_user: "{{ splunk_user }}"
 
+    # --- Added step to stop Splunk so boot-start can be managed safely ---
+    - name: Stop Splunk temporarily to configure boot-start
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk stop"
+      become: yes
+      become_user: "{{ splunk_user }}"
+      failed_when: false
+
     - name: Enable Splunk boot-start cleanly as the splunk user
       ansible.builtin.command:
         cmd: "{{ splunk_home }}/bin/splunk enable boot-start -user {{ splunk_user }} --accept-license --no-prompt"
       # This needs to run as root (`become: yes`), which matches host defaults
+
+    # --- Added step to bring Splunk back online after configuration ---
+    - name: Start Splunk service after boot-start configuration
+      ansible.builtin.command:
+        cmd: "{{ splunk_home }}/bin/splunk start"
+      become: yes
+      become_user: "{{ splunk_user }}"
 
     - name: Check Splunk status
       ansible.builtin.command:
