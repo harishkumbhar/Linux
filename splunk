@@ -1,107 +1,61 @@
 ---
-- name: Upgrade and Configure Splunk Universal Forwarder
+- name: Completely Uninstall Splunk Universal Forwarder
   hosts: splunk_forwarders
   become: yes
   vars:
     splunk_home: "/opt/splunkforwarder"
     splunk_user: "splunk"
     splunk_group: "splunk"
-    splunk_admin_user: "spladmin"
-    splunk_admin_pass: "Spl@1234"
-    deployment_server: "deploymentserver4.sbi.co.in:8089"
-    # Specify your upgrade package location here
-    splunk_installer_rpm: "/tmp/splunkforwarder-latest-linux-264-x86_64.rpm"
 
   tasks:
     - name: Check if Splunk is currently running
       ansible.builtin.command:
         cmd: "{{ splunk_home }}/bin/splunk status"
-      become: yes
-      become_user: "{{ splunk_user }}"
-      register: splunk_pre_status
+      register: splunk_status
       failed_when: false
       changed_when: false
 
-    - name: Stop Splunk gracefully before upgrade
+    - name: Stop Splunk service if running
       ansible.builtin.command:
         cmd: "{{ splunk_home }}/bin/splunk stop"
       become: yes
       become_user: "{{ splunk_user }}"
-      when: "'splunkd is running' in splunk_pre_status.stdout"
+      when: "'splunkd is running' in splunk_status.stdout"
       failed_when: false
 
-    - name: Upgrade Splunk Universal Forwarder binary package
-      ansible.builtin.dnf: # Change to ansible.builtin.apt if using Debian/Ubuntu
-        name: "{{ splunk_installer_rpm }}"
-        state: latest
-
-    - name: Create or update user-seed.conf for admin credentials
-      ansible.builtin.copy:
-        dest: "{{ splunk_home }}/etc/system/local/user-seed.conf"
-        content: |
-          [user_info]
-          USERNAME = {{ splunk_admin_user }}
-          PASSWORD = {{ splunk_admin_pass }}
-        owner: "{{ splunk_user }}"
-        group: "{{ splunk_group }}"
-        mode: '0600'
-
-    - name: Ensure [general] and serverName are set correctly in inputs.conf
-      ansible.builtin.blockinfile:
-        path: "{{ splunk_home }}/etc/system/local/inputs.conf"
-        create: yes
-        owner: "{{ splunk_user }}"
-        group: "{{ splunk_group }}"
-        mode: '0644'
-        marker: "# {mark} ANSIBLE MANAGED GENERAL SETTINGS"
-        block: |
-          [general]
-          serverName = {{ ansible_hostname }}
-
-    - name: Fix ownership of Splunk forwarder directory post-upgrade
-      ansible.builtin.file:
-        path: "{{ splunk_home }}"
-        owner: "{{ splunk_user }}"
-        group: "{{ splunk_group }}"
-        recurse: yes
-
-    - name: Disable old boot-start configuration to clear systemd conflicts
+    - name: Disable Splunk boot-start to remove systemd scripts
       ansible.builtin.command:
         cmd: "{{ splunk_home }}/bin/splunk disable boot-start"
       failed_when: false
 
-    - name: Enable Splunk boot-start cleanly as the splunk user
-      ansible.builtin.command:
-        cmd: "{{ splunk_home }}/bin/splunk enable boot-start -user {{ splunk_user }} --accept-license --no-prompt"
+    - name: Uninstall Splunk Forwarder package
+      ansible.builtin.dnf: # Use ansible.builtin.apt for Debian/Ubuntu
+        name: splunkforwarder
+        state: absent
 
-    - name: Start Splunk and accept license to trigger the upgrade migration
-      ansible.builtin.command:
-        cmd: "{{ splunk_home }}/bin/splunk start --accept-license --answer-yes --no-prompt"
-      become: yes
-      become_user: "{{ splunk_user }}"
+    - name: Remove Splunk installation directory completely
+      ansible.builtin.file:
+        path: "{{ splunk_home }}"
+        state: absent
 
-    - name: Check Splunk status post-upgrade
-      ansible.builtin.command:
-        cmd: "{{ splunk_home }}/bin/splunk status"
-      become: yes
-      become_user: "{{ splunk_user }}"
-      register: splunk_status_output
-      changed_when: false
+    - name: Remove remaining systemd service artifacts if any exist
+      ansible.builtin.file:
+        path: "/etc/systemd/system/SplunkForwarder.service"
+        state: absent
+      notify: Reload systemd daemon
 
-    - name: Configure deployment server polling
-      ansible.builtin.command:
-        cmd: "{{ splunk_home }}/bin/splunk set deploy-poll {{ deployment_server }} -auth {{ splunk_admin_user }}:{{ splunk_admin_pass }}"
-      become: yes
-      become_user: "{{ splunk_user }}"
-      # In an upgrade context, this ensures the connection settings are refreshed
+    - name: Remove systemd symlinks
+      ansible.builtin.file:
+        path: "/etc/systemd/system/multi-user.target.wants/SplunkForwarder.service"
+        state: absent
+      notify: Reload systemd daemon
 
-    - name: Set ACL permissions for splunk user on /var/log/
+    - name: Remove ACL permissions for splunk user on /var/log/
       ansible.builtin.command:
-        cmd: "setfacl -Rm u:{{ splunk_user }}:rx /var/log/"
+        cmd: "setfacl -x u:{{ splunk_user }} /var/log/"
+      failed_when: false
 
   handlers:
-    - name: Restart Splunk via Binary
-      ansible.builtin.command:
-        cmd: "{{ splunk_home }}/bin/splunk restart"
-      become: yes
-      become_user: "{{ splunk_user }}"
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
