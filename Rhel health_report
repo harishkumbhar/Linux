@@ -7,62 +7,88 @@
     report_file: "/var/log/rhel9_health_check.log"
 
   tasks:
-    - name: Create or clear the daily report file
-      ansible.builtin.copy:
-        content: "--- RHEL 9 System Health Report - {{ ansible_date_time.date }} ---\n\n"
-        dest: "{{ report_file }}"
-        mode: '0644'
-
     - name: 1. Gather System Uptime
-      ansible.builtin.shell: uptime
+      ansible.builtin.command: uptime
       register: uptime_out
 
     - name: 2. Check Memory Utilization
-      ansible.builtin.shell: free -h
+      ansible.builtin.command: free -h
       register: memory_out
 
     - name: 3. Check Disk Space Usage
-      ansible.builtin.shell: df -hP
+      ansible.builtin.command: df -hP
       register: disk_out
 
-    - name: 4. Check CPU Load Average
+    - name: 4. Check Inode Usage
+      ansible.builtin.command: df -iP
+      register: inode_out
+
+    - name: 5. Check CPU Load Average
       ansible.builtin.shell: top -bn1 | grep "load average"
       register: cpu_out
 
-    - name: 5. List Failed System Services
-      ansible.builtin.shell: systemctl --state=failed --no-legend
+    - name: 6. List Failed System Services (Excluding dnf-makecache & udisks2)
+      ansible.builtin.shell: systemctl --state=failed --no-legend | grep -vE 'dnf-makecache|udisks'
       register: services_out
+      failed_when: false # Prevents playbook failure if grep returns nothing
 
-    - name: Append Uptime to Log
-      ansible.builtin.lineinfile:
-        path: "{{ report_file }}"
-        line: "UPTIME:\n{{ uptime_out.stdout }}\n"
-        insertafter: EOF
+    - name: 7. Check SELinux Status
+      ansible.builtin.command: getenforce
+      register: selinux_out
 
-    - name: Append Memory to Log
-      ansible.builtin.lineinfile:
-        path: "{{ report_file }}"
-        line: "MEMORY USAGE:\n{{ memory_out.stdout }}\n"
-        insertafter: EOF
+    - name: 8. Check for Zombie Processes
+      ansible.builtin.shell: ps aux | awk '{if ($8 ~ "Z") print $0}'
+      register: zombie_out
 
-    - name: Append Disk Space to Log
-      ansible.builtin.lineinfile:
-        path: "{{ report_file }}"
-        line: "DISK SPACE:\n{{ disk_out.stdout }}\n"
-        insertafter: EOF
+    - name: 9. Check Listening TCP/UDP Ports
+      ansible.builtin.shell: ss -tuln
+      register: ports_out
 
-    - name: Append CPU Load to Log
-      ansible.builtin.lineinfile:
-        path: "{{ report_file }}"
-        line: "CPU LOAD AVERAGE:\n{{ cpu_out.stdout }}\n"
-        insertafter: EOF
+    - name: 10. Check if System Reboot is Required (Pending Updates)
+      ansible.builtin.shell: needs-restarting -r
+      register: reboot_out
+      failed_when: false
 
-    - name: Append Failed Services to Log
-      ansible.builtin.lineinfile:
-        path: "{{ report_file }}"
-        line: "FAILED SERVICES:\n{{ services_out.stdout | default('None', true) }}\n"
-        insertafter: EOF
+    - name: Generate Health Check Report
+      ansible.builtin.copy:
+        dest: "{{ report_file }}"
+        mode: '0644'
+        content: |
+          ==================================================
+          --- RHEL 9 System Health Report - {{ ansible_date_time.date }} {{ ansible_date_time.time }} ---
+          Hostname: {{ ansible_fqdn }}
+          ==================================================
+
+          [ UPTIME ]
+          {{ uptime_out.stdout }}
+
+          [ CPU LOAD AVERAGE ]
+          {{ cpu_out.stdout }}
+
+          [ MEMORY USAGE ]
+          {{ memory_out.stdout }}
+
+          [ DISK SPACE ]
+          {{ disk_out.stdout }}
+
+          [ INODE USAGE ]
+          {{ inode_out.stdout }}
+
+          [ FAILED SERVICES (Filtered) ]
+          {{ services_out.stdout if services_out.stdout != "" else "No critical failed services found." }}
+
+          [ SELINUX STATUS ]
+          {{ selinux_out.stdout }}
+
+          [ ZOMBIE PROCESSES ]
+          {{ zombie_out.stdout if zombie_out.stdout != "" else "No zombie processes detected." }}
+
+          [ REBOOT REQUIRED CHECK ]
+          {{ reboot_out.stdout if reboot_out.stdout != "" else "No reboot required." }}
+
+          [ LISTENING PORTS ]
+          {{ ports_out.stdout }}
 
     - name: Display completion message
       ansible.builtin.debug:
-        msg: "Health check completed. Report written to {{ report_file }}"
+        msg: "Health check completed successfully. Report written to {{ report_file }}"
