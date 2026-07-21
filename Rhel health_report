@@ -1,67 +1,68 @@
 ---
-- name: Comprehensive RHEL Server Health Check
+- name: RHEL 9 Daily Health Check
   hosts: all
   become: yes
   gather_facts: yes
-
   vars:
-    report_dir: "/var/log/dailyhealthreport"
-    # Generates a clean timestamp (e.g., 2026-07-15_09-30-00)
-    current_time: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+    report_file: "/var/log/rhel9_health_check.log"
 
   tasks:
-    - name: Ensure the health report directory exists
-      ansible.builtin.file:
-        path: "{{ report_dir }}"
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
-
-    - name: Run health check commands
-      ansible.builtin.shell: |
-        echo "===================================================="
-        echo "SERVER HEALTH REPORT FOR: {{ ansible_hostname }}"
-        echo "CREATED ON: {{ lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S %Z\"') }}"
-        echo "===================================================="
-        
-        echo -e "\n[1. SYSTEM UPTIME & LOAD AVERAGE]"
-        uptime
-        
-        echo -e "\n[2. MEMORY UTILIZATION (MB)]"
-        free -m
-        
-        echo -e "\n[3. FILESYSTEM DISK SPACE USAGE]"
-        df -h -x tmpfs -x devtmpfs
-        
-        echo -e "\n[4. INODE UTILIZATION]"
-        df -i -x tmpfs -x devtmpfs
-        
-        echo -e "\n[5. FAILED SYSTEMD SERVICES]"
-        systemctl --failed --no-legend
-        if [ $? -eq 0 ] && [ -z "$(systemctl --failed --no-legend)" ]; then
-            echo "All core systemd services are running healthy."
-        fi
-        
-        echo -e "\n[6. RECENT KERNEL ERRORS / OOM KILLS]"
-        dmesg -T | grep -iE "error|crit|oom-killer|killing process" | tail -n 10
-        if [ ${PIPESTATUS[1]} -ne 0 ]; then
-            echo "No critical OOM or kernel errors found in recent logs."
-        fi
-      register: health_output
-      changed_when: false
-
-    - name: Write health check results to raw log file
+    - name: Create or clear the daily report file
       ansible.builtin.copy:
-        content: "{{ health_output.stdout }}"
-        dest: "{{ report_dir }}/health_report_{{ current_time }}.log"
-        owner: root
-        group: root
+        content: "--- RHEL 9 System Health Report - {{ ansible_date_time.date }} ---\n\n"
+        dest: "{{ report_file }}"
         mode: '0644'
 
-    - name: Gzip the generated health report log file
-      community.general.archive:
-        path: "{{ report_dir }}/health_report_{{ current_time }}.log"
-        dest: "{{ report_dir }}/health_report_{{ current_time }}.log.gz"
-        format: gz
-        remove: yes # Deletes the raw text file after successful compression
+    - name: 1. Gather System Uptime
+      ansible.builtin.shell: uptime
+      register: uptime_out
+
+    - name: 2. Check Memory Utilization
+      ansible.builtin.shell: free -h
+      register: memory_out
+
+    - name: 3. Check Disk Space Usage
+      ansible.builtin.shell: df -hP
+      register: disk_out
+
+    - name: 4. Check CPU Load Average
+      ansible.builtin.shell: top -bn1 | grep "load average"
+      register: cpu_out
+
+    - name: 5. List Failed System Services
+      ansible.builtin.shell: systemctl --state=failed --no-legend
+      register: services_out
+
+    - name: Append Uptime to Log
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: "UPTIME:\n{{ uptime_out.stdout }}\n"
+        insertafter: EOF
+
+    - name: Append Memory to Log
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: "MEMORY USAGE:\n{{ memory_out.stdout }}\n"
+        insertafter: EOF
+
+    - name: Append Disk Space to Log
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: "DISK SPACE:\n{{ disk_out.stdout }}\n"
+        insertafter: EOF
+
+    - name: Append CPU Load to Log
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: "CPU LOAD AVERAGE:\n{{ cpu_out.stdout }}\n"
+        insertafter: EOF
+
+    - name: Append Failed Services to Log
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: "FAILED SERVICES:\n{{ services_out.stdout | default('None', true) }}\n"
+        insertafter: EOF
+
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg: "Health check completed. Report written to {{ report_file }}"
