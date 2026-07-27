@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""
+OpenShift (oc) Command Explainer & Example Generator
+"""
+
+import sys
+
+# Knowledge base of OpenShift commands
+COMMAND_KNOWLEDGE_BASE = {
+    "login": {
+        "purpose": "Logs into an OpenShift cluster with specified credentials or token and sets up your session.",
+        "examples": [
+            "oc login https://api.openshift.example.com:6443 -u admin -p password",
+            "oc login --token=sha256~xxxx... --server=https://api.openshift.example.com:6443",
+            "oc login  # Interactive login prompt"
+        ]
+    },
+    "logout": {
+        "purpose": "Ends the active CLI session by clearing stored credentials for the current context.",
+        "examples": [
+            "oc logout"
+        ]
+    },
+    "whoami": {
+        "purpose": "Displays the currently authenticated user name and server context.",
+        "examples": [
+            "oc whoami",
+            "oc whoami --show-server  # Displays current API server URL",
+            "oc whoami -t             # Displays active user token"
+        ]
+    },
+    "config": {
+        "purpose": "Manages client configuration settings, contexts, and kubeconfig files.",
+        "examples": [
+            "oc config view                           # View current kubeconfig",
+            "oc config current-context                 # Display active context",
+            "oc config use-context my-cluster-project # Switch context"
+        ]
+    },
+    "new-project": {
+        "purpose": "Creates a new OpenShift project (namespace with annotations) and automatically switches to it.",
+        "examples": [
+            "oc new-project my-dev-app",
+            "oc new-project production --display-name='Prod Cluster' --description='Production workloads'"
+        ]
+    },
+    "project": {
+        "purpose": "Switches the active CLI context to a specified existing project, or prints current project if no name is given.",
+        "examples": [
+            "oc project              # Print current project",
+            "oc project my-dev-app   # Switch to my-dev-app project"
+        ]
+    },
+    "get": {
+        "purpose": "Fetches and displays information about one or more Kubernetes/OpenShift resources (pods, nodes, routes, services, etc.).",
+        "examples": [
+            "oc get nodes                                # List all cluster nodes",
+            "oc get pods -n my-project                   # List pods in a specific project",
+            "oc get routes -o wide                      # List routes with extra details",
+            "oc get deployment my-app -o yaml            # Export deployment as YAML manifest",
+            "oc get pods -l app=frontend                 # Filter pods by label"
+        ]
+    },
+    "status": {
+        "purpose": "Provides a high-level overview of resources running in the currently selected project.",
+        "examples": [
+            "oc status",
+            "oc status -v  # Verbose output showing extra relation details"
+        ]
+    },
+    "delete": {
+        "purpose": "Deletes resources from the cluster by name, label, or YAML manifest.",
+        "examples": [
+            "oc delete project my-dev-app                # Delete entire project and components",
+            "oc delete pod my-pod-1234                   # Delete a specific pod",
+            "oc delete -f deployment.yaml               # Delete resources defined in file"
+        ]
+    },
+    "new-app": {
+        "purpose": "Creates a new application in OpenShift automatically from source code, Git repo, S2I builder, or container image.",
+        "examples": [
+            "oc new-app https://github.com/sclorg/nodejs-ex  # Build/deploy from Git repo",
+            "oc new-app nginx:latest                         # Deploy directly from container image",
+            "oc new-app --name=my-service .                  # Create app from current local directory"
+        ]
+    },
+    "logs": {
+        "purpose": "Fetches and prints stdout/stderr log output from a running pod or container.",
+        "examples": [
+            "oc logs my-pod-name",
+            "oc logs -f my-pod-name                      # Stream live logs (follow)",
+            "oc logs deployment/my-app -c container-1    # Fetch logs for specific container"
+        ]
+    },
+    "expose": {
+        "purpose": "Exposes a service or deployment as an external HTTP/HTTPS OpenShift Route.",
+        "examples": [
+            "oc expose service my-app-service",
+            "oc expose service frontend --hostname=app.example.com"
+        ]
+    },
+    "describe": {
+        "purpose": "Displays detailed state information, status conditions, and events for a specific resource.",
+        "examples": [
+            "oc describe node master-01",
+            "oc describe pod my-failing-pod",
+            "oc describe route my-app-route"
+        ]
+    },
+    "exec": {
+        "purpose": "Executes a command inside an active, running container (similar to docker exec or ssh).",
+        "examples": [
+            "oc exec my-pod-123 -- ls /app",
+            "oc exec -it my-pod-123 -- /bin/bash  # Interactive shell access"
+        ]
+    }
+}
+
+
+def analyze_oc_command(user_input: str):
+    clean_input = user_input.strip()
+    tokens = clean_input.split()
+
+    if not tokens:
+        print("Error: No command entered.")
+        return
+
+    # Strip 'oc' if provided at start
+    if tokens[0].lower() == "oc":
+        tokens = tokens[1:]
+
+    if not tokens:
+        print("Entered only 'oc'. OpenShift CLI binary base command.")
+        return
+
+    main_subcommand = tokens[0].lower()
+    
+    # Handle composite subcommands (e.g. "config view", "config use-context")
+    full_subcommand = main_subcommand
+    if len(tokens) > 1 and f"{main_subcommand} {tokens[1].lower()}" in [
+        "config view", "config current-context", "config use-context"
+    ]:
+        full_subcommand = f"{main_subcommand} {tokens[1].lower()}"
+
+    resource_or_flag = tokens[1:] if len(tokens) > 1 else []
+
+    print("\n" + "="*65)
+    print(f" 🔍 OCP Command Analysis: '{clean_input}'")
+    print("="*65)
+
+    if main_subcommand in COMMAND_KNOWLEDGE_BASE:
+        info = COMMAND_KNOWLEDGE_BASE[main_subcommand]
+        
+        print("\n📌 PURPOSE:")
+        print(f"   {info['purpose']}")
+
+        if resource_or_flag:
+            target = " ".join(resource_or_flag)
+            print(f"\n🎯 TARGET / ARGUMENTS SPECIFIED:")
+            print(f"   You specified target/flags: '{target}'")
+            if main_subcommand == "get":
+                print(f"   --> This will list and retrieve current details about: '{target}'.")
+
+        print("\n💡 EXAMPLES & USAGE VARIATIONS:")
+        for idx, ex in enumerate(info["examples"], 1):
+            print(f"   {idx}. {ex}")
+
+    else:
+        print("\n📌 PURPOSE:")
+        print(f"   Custom or advanced command under 'oc {main_subcommand}'.")
+        print("   TIP: You can get official embedded help by running:")
+        print(f"   --> oc {main_subcommand} --help")
+        print(f"   --> oc explain {main_subcommand}")
+
+    print("\n" + "="*65 + "\n")
+
+
+def main():
+    print("=== OpenShift (OCP) Command Explainer ===")
+    print("Type your OCP command below (e.g., 'oc get nodes', 'oc new-app', 'oc status').")
+    print("Type 'exit' or 'quit' to close.\n")
+
+    while True:
+        try:
+            cmd = input("Enter OCP Command > ")
+            if cmd.strip().lower() in ["exit", "quit"]:
+                print("Exiting tool. Goodbye!")
+                break
+            if cmd.strip():
+                analyze_oc_command(cmd)
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting tool.")
+            break
+
+if __name__ == "__main__":
+    main()
+
