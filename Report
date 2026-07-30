@@ -1,1 +1,40 @@
 Clone base Virtual Machines with Linux 9.6 image on Meghdoot environment. Validate VM creation, system resources, and basic OS boot health to ensure deployment stability.
+​Meghdoot VM Cloning:
+​Clone base Virtual Machines with Linux 9.6 image on Meghdoot environment. Validate VM creation, system resources, and basic OS boot health to ensure deployment stability.
+​Hostname & IP Configuration:
+​Update and assign designated hostnames for Meghdoot servers alongside static IP address configuration. Verify network reachability and sub-net routing across all nodes.
+​File System Creation:
+​Configure and format file systems across all new server instances according to standard storage layouts. Verify mount points and partition tables for compliance.
+​SCD 14 Implementation:
+​Implement and deploy Security Compliance Document (SCD 14) guidelines across the OS layer. Conduct validation checks to ensure baseline parameters are met.
+​Vulnerability Assessment (VA) Closure:
+​Address and remediate identified OS-level vulnerabilities based on the latest VA report. Apply necessary patches and verify post-remediation security status.
+​Disable SELinux & Firewall:
+​Temporarily disable SELinux enforcement and system firewalls to facilitate initial environment setup. Ensure underlying rules are aligned prior to security reactivation.
+​SSH Port Configuration:
+​Update /etc/ssh/sshd_config to enable dedicated ports 22 and 27041 for administrative access. Enable password authentication (PasswordAuthentication yes) and restart SSH services.
+​B. OS Agents Installation & Configuration
+​DS Agent:
+​Download and install the Deep Security agent on target OS instances. Register agent with central manager and verify policy synchronization.
+​SNOW Agent:
+​Deploy Service Now (SNOW) discovery agent for automated asset tracking. Validate connectivity and ensure host telemetry is reporting back to inventory console.
+​EDR Agent:
+​Install Endpoint Detection and Response (EDR) sensor software across target servers. Verify active monitoring status and agent health reporting.
+​CommVault Agent:
+​Install CommVault backup agent components to enable automated enterprise backups. Configure baseline file-level backup schedules and verify communication.
+​RSAD Agent (BMC):
+​Deploy BMC RSAD monitoring agent to collect system health metrics and alerts. Ensure operational integration with central BMC infrastructure.
+​Splunk Agent:
+​Install Splunk Universal Forwarder to aggregate system and application logs. Configure log paths and verify streaming output to central indexers.
+​ECKMS Agent (For APP & WEB):
+​Deploy ECKMS agent to handle encryption key management on Application and Web tiers. Validate secure channel connectivity for key exchange.
+​C. OS Prerequisites
+​DNS Configuration:
+​Configure primary and secondary DNS server details in network settings. Validate domain resolution and forward/reverse lookup functionalities.
+​Host File Updates:
+​Update /etc/hosts file with local hostnames and corresponding IP addresses. Ensure proper mapping for internal communication dependent services.
+​NTP Configuration:
+​Configure Network Time Protocol (NTP) to sync system clock with enterprise time servers. Validate time accuracy to prevent time-drift issues across services.
+​D. User & Directory Setup
+​User Creation & Configuration:
+​Provision system users (wacgov, centralgov, qsbwaccmp) across all newly built servers. Apply appropriate user privileges, groups, and SSH key mappings as required.
