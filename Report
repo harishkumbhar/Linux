@@ -39,3 +39,47 @@ Clone base Virtual Machines with Linux 9.6 image on Meghdoot environment. Valida
 ​User Creation & Configuration:
 ​Provision system users (wacgov, centralgov, qsbwaccmp) across all newly built servers. Apply appropriate user privileges, groups, and SSH key mappings as required.
 Provision and configure Enterprise NAS (Network Attached Storage) mount points across all target Linux instances. Update /etc/fstab with proper network pathing, filesystem types, and persistent mount options. Validate read/write permissions and ensure seamless accessibility post-reboot.
+
+≈=============≈===========
+
+Network Interface Configuration:
+​Configure and verify network interfaces across public and private channels on all cluster nodes. Ensure dedicated allocation for client access/SCAN and cluster interconnect routing. Validate active status and link speeds for zero-drop communication.
+​DNS & Host File Configuration:
+​Map public, private (-priv), and SCAN hostnames to their respective IP addresses across /etc/hosts and central DNS. Ensure a single SCAN address resolves to all cluster node IPs as required for Oracle RAC load balancing. Perform reverse lookup tests to confirm network alignment.
+​Time Synchronization (NTP/Chrony):
+​Configure and synchronize chrony/NTP services across all cluster nodes with the central time authority. Ensure minimal time drift between nodes to maintain RAC cluster health and voting integrity. Verify active sync status prior to database deployment.
+​Firewall & Port Rules:
+​Disable firewalld or open specific RAC communication ports (e.g., 1521 for listeners, 6200–6299 for interconnects). Validate open state across nodes to prevent inter-node traffic blockage. Ensure security exceptions are properly documented.
+​Disable SELinux:
+​Set SELinux mode to permissive/disabled within /etc/selinux/config. Ensure system enforcement is completely bypassed to prevent permission conflicts during Oracle RAC installation. Confirm persistent setting post-reboot.
+​SSH Port & Authentication Setup:
+​Update /etc/ssh/sshd_config to enable dedicated administrative ports (22 and 27041) and permit password authentication. Restart SSH daemons to apply changes cleanly. Confirm login connectivity across target nodes.
+​B. Shared Storage Setup
+​Shared Block Storage & Multipathing:
+​Provision shared block storage accessible across all three cluster nodes utilizing MPIO or iSCSI. Configure DM-Multipath on all nodes to provide storage redundant pathing. Validate multi-path status and device mapping stability.
+​ASM Disk & Layout Configuration:
+​Partition and label shared disks dedicated for Oracle ASM deployment (OCR/Voting and DATA/RECO disk groups). Allocate at least 3 distinct partitions/disks for OCR/Voting to ensure quorum. Verify disk visibility and read/write consistency across all nodes.
+​C. OS Prerequisites
+​Package Installation:
+​Install required core dependencies including oracle-database-preinstall-19c and nfs-utils via dnf. Ensure all prerequisite libraries and RPM dependencies are satisfied. Verify software repository synchronization across all target nodes.
+​Kernel Parameter Tuning:
+​Adjust system kernel parameters in /etc/sysctl.conf to align with Oracle 19c RAC guidelines. Reload settings using sysctl -p to enforce active kernel memory and semaphore configurations. Validate parameter values against Oracle baseline requirements.
+​Resource Limits Setup:
+​Configure system resource limits in /etc/security/limits.conf for oracle and grid OS users. Define soft and hard limits for open file descriptors, processes, and stack sizes. Verify applied limits by testing user sessions.
+​Resolv.conf / Host File / NTP Rules:
+​Apply mandatory network resolution and time configs within /etc/resolv.conf, /etc/hosts, and time sync services. Confirm proper domain lookup sequences and consistent local resolution. Validate end-to-end communication readiness across nodes.
+​Server-to-Server SSH Passwordless Setup:
+​Establish passwordless SSH connectivity for oracle and grid users across all cluster nodes. Exchange public keys and test user access via SSH without prompting for credentials. Verify cluster management utility capability.
+​Mount NFS Storage & System Entries:
+​Mount required Enterprise NFS shares to local directory structures for installation binaries and backups. Apply default umask configurations and grant necessary sudoers privileges for system administrative roles. Validate file system access permissions.
+​Local & Shared Disks Creation:
+​Initialize local filesystems alongside shared disk groups required for database files. Set correct device ownership (grid:asmadmin / oracle:oinstall) and permissions (0660). Confirm disk initialization across every cluster member node.
+​D. User & Directory Setup
+​Group Creation:
+​Create standard Oracle OS security groups including oinstall, dba, oper, asmadmin, asmdba, and asmoper. Verify group IDs match across all cluster nodes to maintain consistent access control.
+​User Provisioning:
+​Create administrative and operational user accounts (oracle, grid, SOCVA, addmitam, splunk, orauser, uadmin). Assign primary and secondary group memberships per role requirement and configure persistent secure passwords.
+​Directory Structure Creation:
+​Create standard Oracle Base and Home paths including /u01/app/grid, /u01/app/oracle, and /u01/app/oraInventory. Set correct ownership and recursive permissions (chown -R grid:oinstall). Ensure adequate disk space availability across mount poin
+
+
