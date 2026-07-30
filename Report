@@ -38,3 +38,4 @@ Clone base Virtual Machines with Linux 9.6 image on Meghdoot environment. Valida
 ​D. User & Directory Setup
 ​User Creation & Configuration:
 ​Provision system users (wacgov, centralgov, qsbwaccmp) across all newly built servers. Apply appropriate user privileges, groups, and SSH key mappings as required.
+Provision and configure Enterprise NAS (Network Attached Storage) mount points across all target Linux instances. Update /etc/fstab with proper network pathing, filesystem types, and persistent mount options. Validate read/write permissions and ensure seamless accessibility post-reboot.
