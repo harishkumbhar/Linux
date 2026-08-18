@@ -1,0 +1,5 @@
+for dev in $(ls /dev/sd[a-z] /dev/sd[a-z][a-z] 2>/dev/null); do
+    partx -d $dev 2>/dev/null
+    blockdev --rereadpt $dev 2>/dev/null
+done
+udevadm settle
