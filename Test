@@ -3,3 +3,4 @@ for dev in $(ls /dev/sd[a-z] /dev/sd[a-z][a-z] 2>/dev/null); do
     blockdev --rereadpt $dev 2>/dev/null
 done
 udevadm settle
+for dev in sdu sdy sdw sdx sdv; do dd if=/dev/zero of=/dev/$dev bs=1M count=100 status=progress; done
