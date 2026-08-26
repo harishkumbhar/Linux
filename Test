@@ -15,3 +15,23 @@ for item in $(ls -1t /doc-root/SFTP/ReverseFile/* 2>/dev/null | tail -n +101); d
     rm -rf "$item"
 done
 : linkedin.com/in/kamali-sekara525151a9
+
+
+---
+- name: Standardize fstab configuration for /tmp and /var/tmp
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure /dev/mapper/rhel-tmp has noexec options
+      ansible.posix.mount:
+        path: /tmp
+        src: /dev/mapper/rhel-tmp
+        fstype: xfs
+        opts: defaults,nodev,nosuid,noexec
+        state: present
+
+    - name: Remove bind mount line for /var/tmp
+      ansible.posix.mount:
+        path: /var/tmp
+        state: absent
+
