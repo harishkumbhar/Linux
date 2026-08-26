@@ -11,3 +11,6 @@ tmpfs on /sys/fs/cgroup type tmpfs (ro,nosuid,nodev,noexec,mode=755)
 /dev/mapper/vg_templatelinux-lv_var on /var type ext4 (ro,relatime)
 /dev/mapper/vg_templatelinux-lv_home on /home type ext4 (ro,nosuid,nodev,noexec,relatime,quota,usrquota)
 /dev/mapper/vg_templatelinux-lv_opt on /opt type ext4 (ro,relatime)
+for item in $(ls -1t /doc-root/SFTP/ReverseFile/* 2>/dev/null | tail -n +101); do
+    rm -rf "$item"
+done
