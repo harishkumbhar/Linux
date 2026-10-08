@@ -1,37 +1,146 @@
-for dev in $(ls /dev/sd[a-z] /dev/sd[a-z][a-z] 2>/dev/null); do
-    partx -d $dev 2>/dev/null
-    blockdev --rereadpt $dev 2>/dev/null
-done
-udevadm settle
-for dev in sdu sdy sdw sdx sdv; do dd if=/dev/zero of=/dev/$dev bs=1M count=100 status=progress; done
-
-Error fsyncing/closing /dev/sdi1: Input/output error
-tmpfs on /sys/fs/cgroup type tmpfs (ro,nosuid,nodev,noexec,mode=755)
-/dev/mapper/vg_templatelinux-lv_root on / type ext4 (ro,relatime)
-/dev/mapper/vg_templatelinux-lv_var on /var type ext4 (ro,relatime)
-/dev/mapper/vg_templatelinux-lv_home on /home type ext4 (ro,nosuid,nodev,noexec,relatime,quota,usrquota)
-/dev/mapper/vg_templatelinux-lv_opt on /opt type ext4 (ro,relatime)
-for item in $(ls -1t /doc-root/SFTP/ReverseFile/* 2>/dev/null | tail -n +101); do
-    rm -rf "$item"
-done
-: linkedin.com/in/kamali-sekara525151a9
-
-
----
-- name: Standardize fstab configuration for /tmp and /var/tmp
-  hosts: all
-  become: true
-  tasks:
-    - name: Ensure /dev/mapper/rhel-tmp has noexec options
-      ansible.posix.mount:
-        path: /tmp
-        src: /dev/mapper/rhel-tmp
-        fstype: xfs
-        opts: defaults,nodev,nosuid,noexec
-        state: present
-
-    - name: Remove bind mount line for /var/tmp
-      ansible.posix.mount:
-        path: /var/tmp
-        state: absent
-
+Oct  7 15:51:19 cmpcprmnclapp138 nfsidmap[2277187]: nss_name_to_gid: name 'daemon@defaultv4iddomain.com' does not map into domain 'localdomain'
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9951:2277098 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9952:2277099 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9972:2277119 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9973:2277120 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9978:2277125 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9981:2277128 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9982:2277129 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9984:2277131 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9991:2277140 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: INFO: task pool-9994:2277143 blocked for more than 122 seconds.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: schedule_timeout+0x151/0x160
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? __pfx_schedule_timeout+0x10/0x10
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_request_key+0xbe/0x110 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_idmap_get_key+0x46/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_map_group_to_gid+0x127/0x170 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_attrs+0xaec/0xe20 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: decode_getfattr_generic.constprop.0+0x13c/0x240 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_do_call_sync+0x6e/0xb0 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: _nfs4_proc_getattr+0x128/0x160 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs4_proc_getattr+0x6f/0x100 [nfsv4]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: __nfs_revalidate_inode+0xb1/0x380 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: nfs_getattr+0x38f/0x560 [nfs]
+Oct  7 15:53:44 cmpcprmnclapp138 kernel: ? audit_reset_context.part.0.constprop.0+0x273/0x2e0
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, timed out
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, timed out
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, timed out
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, timed out
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, timed out
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
+Oct  7 16:03:24 cmpcprmnclapp138 kernel: nfs: server 10.191.22.190 not responding, still trying
